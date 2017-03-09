@@ -4,7 +4,7 @@
 import urllib2
 import bs4
 import chardet
-
+from selenium import webdriver
 class SpiderDytt8:
     def __init__(self):
         self.__headers = ('User-Agent', 'Mozilla/5.0 (Windows NT 6.3; WOW64)')
@@ -44,8 +44,12 @@ class SpiderDytt8:
             UrlDic = {}
             # get url
             filmHref = "http://www.dytt8.net" + film['href']
+
             # open url
-            filmContent = self.openUrl(filmHref)
+           # filmContent = self.openUrl(filmHref)
+            driver = webdriver.PhantomJS()
+            driver.get(filmHref)
+            filmContent = driver.page_source
             # create a BeautifulSoup object
             filmSoup = bs4.BeautifulSoup(filmContent, "html.parser")
             # get film title
@@ -53,8 +57,12 @@ class SpiderDytt8:
             UrlDic['film_title'] = titleAll[-1].h1.font.string
             # get download url
             if UrlDic['film_title']:
-                UrlDic['download_url'] = filmSoup.findAll('td', style='WORD-WRAP: break-word')[0].a['href']
-                filmsUrlList.append(UrlDic)
+                atag=filmSoup.findAll('td', style='WORD-WRAP: break-word')[0].a.attrs
+                #UrlDic['download_url'] = filmSoup.findAll('td', style='WORD-WRAP: break-word')[0].a['gafvolth']
+                for attri in atag:
+                    if atag[attri].find("thunder://")>=0:
+                      UrlDic['download_url'] = atag[attri]
+                      filmsUrlList.append(UrlDic)
             else:
                 break
         return filmsUrlList

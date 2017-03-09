@@ -7,17 +7,8 @@ import time
 import Log
 import Function
 import Http
+from multiprocessing.dummy import Pool as ThreadPool
 
-def change_proxy():
-    proxy = random.choice(proxies)
-    if proxy == None:
-        proxy_support = proxy_support = urllib.request.ProxyHandler({})
-    else:
-        proxy_support = urllib.request.ProxyHandler({'http':proxy})
-    opener = urllib.request.build_opener(proxy_support)
-    opener.addheaders = [('User-Agent',headers['User-Agent'])]
-    urllib.request.install_opener(opener)
-    print('智能切换代理：%s' % ('本机' if proxy==None else proxy))
 
 def cbk(a, b, c):
     '''回调函数
@@ -33,7 +24,7 @@ def cbk(a, b, c):
 page = 1
 # 终止页码。为0时根据last_start_id来判断是否停止爬取；非0时爬完此页即停止
 # 此参数必须 >= page
-max_page = 0
+max_page = 7612
 # 要下载的图片类型。0=全部 1=横图 2=竖图 3=正方形
 pic_type = 0
 # 图片尺寸限制，0为不限制。proportion为图片宽高比
@@ -46,13 +37,12 @@ pic_size = {
 Function.create_folder()
 
 last_start_id = int(Function.get('last_start_id.data'))  # 上次开始爬取时第一张图片ID。爬到此ID则终止此次爬取
-i = 0  # 当前第几张
+
 end = False  # 爬取是否已结束
 
-while True:
+def download(page):
+        i = 0  # 当前第几张
 
-    # 终止页码为0 或 未到达终止页码时 才进行爬取
-    if max_page == 0 or page <= max_page:
         # 获取页面内容
         Log.add('正在读取第'+str(page)+'页……')
         html = Yandere.get_html(page)
@@ -129,13 +119,12 @@ while True:
 
                 #Function.write(file_name, img)
 
-        if end:
-            break
-    else:
-        break
 
-    page += 1
-
+# 设定work数
+pool = ThreadPool(processes=8)
+# 多线程获取rdatas
+rdatas = pool.map(download, range(1,max_page))
+pool.join()
 Log.add('爬取结束')
 Function.write('log_' + str(int(time.time())) + '.txt', Log.get())
 exit(200)
